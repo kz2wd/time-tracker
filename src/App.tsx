@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState, createContext, useContext } from 'react'
 import './App.css'
 import { database, Task } from './database'
 
@@ -34,57 +32,129 @@ function generateFakeTasks(n: number): Task[] {
   return Array(n).map(() => new Task(choice(mockDescriptions)))
 }
 
-function TaskCard({ task }) {
+
+function TaskCard({ task }: { task: Task }) {
+  const tskctx = useContext(SelectedTaskContext)!
+  const classes = `task-card ${tskctx.selectedTask == task ? 'selected-task' : ''}`
+  
   return (
     <>
-    <div className="card">
-      <p>Task:</p>
-      <p>{task.description}</p>
-      <input type="text"/>
-
-    </div>
+      <div className={classes}
+        onClick={() => {
+            tskctx.setSelectedTask(task)
+          }}
+        onDoubleClick={() => {
+          console.log("double")
+        }}
+      >
+        {task.description}
+      </div>
     </>
   )
 }
 
-function TaskContainer() {
-
-  // Fetch root level tasks
-
-  const rootTasks: Task[] = [
+const rootTasks: Task[] = [
     new Task(choice(mockDescriptions)),
     new Task(choice(mockDescriptions)),
     new Task(choice(mockDescriptions)),
   ]
 
+function TaskContainer() {
+
+  // Fetch root level tasks
+
+  
 
   return (
     <>
-    {rootTasks.map((it) => (
-      <TaskCard task={it} />
-    ))}
+      <div className='task-container'>
+        {rootTasks.map((it, index) => (
+          <TaskCard 
+            key={it.id || index} 
+            task={it}
+            />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function minutesToHoursMinutes(minutes: number) {
+  return {
+    hours: Math.floor(minutes / 60),
+    minutes: minutes % 60,
+  };
+}
+
+
+function TimeDisplay({ totalMinutes, text }: {
+  totalMinutes: number, text: String
+}) {
+  const { hours, minutes } = minutesToHoursMinutes(totalMinutes);
+  return (
+    <>
+      <div className='time-display'>
+        <div>
+          <span className="hours-display" >{hours}</span>
+          <span className="h-label">H</span>
+          <span className="minutes-display">{minutes}</span>
+        </div>
+        <p>{text}</p>
+      </div>      
+    </>
+  )
+}
+
+function BottomBar() {
+
+  const tskctx = useContext(SelectedTaskContext)!  
+
+  return (
+    <>
+      <div className="bottom-bar">
+        {tskctx.selectedTask ? tskctx.selectedTask.description : "Select task"}
+        <div className="control-panel">
+          <TimeDisplay totalMinutes={140} text={"Total"} />
+          <button onClick={() => {
+              tskctx.setIsWorking(!tskctx.isWorking)
+            }
+          } className={tskctx.isWorking ? "stop": "start"}>
+            {tskctx.isWorking ? "Stop": "Start"}</button>
+          <TimeDisplay totalMinutes={10} text={"Today"} />
+        </div>
+      </div>
     </>
   )
 }
 
 
-
-
-function TaskAdder() {
-
-}
-
+const SelectedTaskContext = createContext<{
+  selectedTask: Task | null
+  setSelectedTask: (t: Task | null) => void
+  isWorking: boolean
+  setIsWorking: (b: boolean) => void
+} | null>(null); 
 
 function App() {
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [isWorking, setIsWorking] = useState(false)
+  
+  const customSetSelectedTask = (task: Task | null) => {
+    if (task == selectedTask) return
+    if (isWorking) return
+    setSelectedTask(task)
+  }
+
   return (
-    <>
-      <h1>Task Timer</h1>
-      <div>
-        Menu
-        
-      </div>
+    <SelectedTaskContext.Provider value={
+      { 
+        selectedTask: selectedTask, 
+        setSelectedTask: customSetSelectedTask, 
+        isWorking: isWorking,
+        setIsWorking: setIsWorking }}>
       <TaskContainer />
-    </>
+      <BottomBar />
+    </SelectedTaskContext.Provider>
   )
 }
 

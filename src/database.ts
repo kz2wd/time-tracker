@@ -21,6 +21,10 @@ export class Task {
         database.updateTask(this)
     }
 
+    async getTotalTimeMinutes(): Promise<number> {
+        return 10
+    }
+
 }
 
 export class WorkEntry {
@@ -63,49 +67,58 @@ async function updateParent(store: IDBObjectStore, childId: number, parent: Task
     await request(req)
 }
 
-export const database = {
-    async initDatabase (): Promise<void> {
-        await new Promise((resolve, reject) => {
-            let openRequest = indexedDB.open("TasksTrackerDB", 1)
+async function initDatabase (): Promise<Database> {
+    await new Promise((resolve, reject) => {
+        let openRequest = indexedDB.open("TasksTrackerDB", 1)
 
-            openRequest.onerror = (_event: Event) => {
-                console.log("Usage of IndexedDB not allowed.")
-                reject(openRequest.error)
+        openRequest.onerror = (_event: Event) => {
+            console.log("Usage of IndexedDB not allowed.")
+            reject(openRequest.error)
+        }
+
+        openRequest.onsuccess = (event: Event) => {
+            connection = (event.target as IDBOpenDBRequest).result;
+            console.log(`Initializing database, version [${connection.version}]`)
+            
+            connection.onerror = (event: Event) => {
+                const rq = (event.target as IDBOpenDBRequest)
+                console.error(`Database error: ${rq.error?.message}`)
             }
 
-            openRequest.onsuccess = (event: Event) => {
-                connection = (event.target as IDBOpenDBRequest).result;
-                console.log(`Initializing database, version [${connection.version}]`)
-                
-                connection.onerror = (event: Event) => {
-                    const rq = (event.target as IDBOpenDBRequest)
-                    console.error(`Database error: ${rq.error?.message}`)
-                }
+            resolve(databaseCore)
+        }
 
-                resolve(null)
+        openRequest.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+            const db = (event.target as IDBOpenDBRequest).result;
+
+            if (!db.objectStoreNames.contains("tasks")) {
+                const objectStore = db.createObjectStore("tasks", 
+                    { keyPath: "id", autoIncrement: true }
+                )
+                objectStore.createIndex("parentId", "parentId")
+            }
+            if (!db.objectStoreNames.contains("workEntries")) {
+                const objectStore = db.createObjectStore("workEntries", 
+                    { keyPath: "id", autoIncrement: true }
+                )
+                objectStore.createIndex("relatedTaskId", "relatedTaskId")
             }
 
-            openRequest.onupgradeneeded = (event: IDBVersionChangeEvent) => {
-                const db = (event.target as IDBOpenDBRequest).result;
+        }
 
-                if (!db.objectStoreNames.contains("tasks")) {
-                    const objectStore = db.createObjectStore("tasks", 
-                        { keyPath: "id", autoIncrement: true }
-                    )
-                    objectStore.createIndex("parentId", "parentId")
-                }
-                if (!db.objectStoreNames.contains("workEntries")) {
-                    const objectStore = db.createObjectStore("workEntries", 
-                        { keyPath: "id", autoIncrement: true }
-                    )
-                    objectStore.createIndex("relatedTaskId", "relatedTaskId")
-                }
+    })
+}
 
-            }
+export const database: Promise<Database> = initDatabase()
 
-        })
-    },
+interface Database {
+    addTask(description: String, parent: Task | null): Promise<Task>
+    updateTask(task: Task): Promise<void>
+    addWorkEntry(task: Task | null): Promise<WorkEntry>
+    updateWorkEntry(workEntry: WorkEntry): Promise<void>
+}
 
+const databaseCore: Database = {
     async addTask(description: string, parent: Task | null): Promise<Task> {
         const task: Task = new Task(
             description = description,
@@ -124,7 +137,7 @@ export const database = {
         return task
     },
 
-    async updateTask(task: Task) {
+    async updateTask(task: Task): Promise<void> {
         const transaction = connection.transaction("tasks", "readwrite")
         const store = transaction.objectStore("tasks")
         await request(store.put(task))
@@ -140,7 +153,7 @@ export const database = {
         return workEntry
     },
 
-    async updateWorkEntry(workEntry: WorkEntry) {
+    async updateWorkEntry(workEntry: WorkEntry): Promise<void> {
         const transaction = connection.transaction("workEntries", "readwrite")
         const store = transaction.objectStore("workEntries")
         await request(store.put(workEntry))
