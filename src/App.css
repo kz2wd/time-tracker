@@ -68,13 +68,81 @@
   box-shadow: 0px -2px 10px #131313;
 }
 
+.bottom-bar .selected-task-panel {
+  margin: 10px;
+  font-size: larger;
+}
+
 .control-panel {
+  background: #333333;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-around;
+  box-shadow: 0px 0px 7px #232323;
+  margin: 10px;
+  padding: 5px;
 }
 
 
 button.start { background: rgb(63, 103, 63); }
 button.stop  { background: rgb(113, 60, 60); }
+
+
+.science-gothic-font {
+  font-family: "Science Gothic", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-size: larger;
+  font-variation-settings:
+    "slnt" 0,
+    "wdth" 100,
+    "CTRS" 0;
+}
+
+.task {
+  font-family: "Oswald", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 450;
+  font-style: normal;
+}
+
+.playwrite-no-font {
+  font-family: "Playwrite NO", cursive;
+  font-optical-sizing: auto;
+  font-weight: 200;
+  font-style: normal;
+}
+
+button {
+  font-family: "Oswald", sans-serif;
+  font-weight: 550;
+  font-optical-sizing: auto;
+}
+
+
+.selected-task .task-input {
+  background-color: #3e3e3e;
+}
+
+.task-input {
+  width: 90%;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: none;
+  padding: 3px;
+  background-color: #303030;
+  text-align: center;
+  font-size: larger;
+}
+
+.task-input:focus {
+  border: none;
+  outline: none;
+}
+
+.hidden {
+  visibility: hidden;
+}
