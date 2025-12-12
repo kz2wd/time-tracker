@@ -2,6 +2,7 @@
 export class Task {
     id?: number
     description: String
+    notes: String = ""
     parentId: number | null
     subtaskIds: number[] = []
     isOver: boolean = false
@@ -11,26 +12,33 @@ export class Task {
         this.parentId = parentId
     }
 
-    toObject() {
+    toObject(withKey: Boolean) {
         return {
-            // do not include id as IndexedDB will handle it
             description: this.description,
             parentId: this.parentId,
             subtaskIds: this.subtaskIds,
             isOver: this.isOver,
+            notes: this.notes,
+            ...(withKey ? {id: this.id} : {}) 
         }
     }
 
     static fromObject(o: any): Task {
         const t = new Task(o.description, o.parentId)
-        t.id = o.id ?? undefined
+        t.id = o.id
         t.subtaskIds = o.subtaskIds ?? []
         t.isOver = o.isOver ?? false
+        t.notes = o.notes ?? ""
         return t
     }
 
     async setDescription(newDescription: String) {
         this.description = newDescription;
+        (await database).updateTask(this);
+    }
+
+    async setNotes(newNotes: String) {
+        this.notes = newNotes;
         (await database).updateTask(this);
     }
 
@@ -63,12 +71,13 @@ export class WorkEntry {
         this.relatedTaskId = relatedTaskId
     }
 
-    toObject() {
+    toObject(withKey: Boolean) {
         return {
             start: this.start,
             end: this.end,
             relatedTaskId: this.relatedTaskId,
             satisfaction: this.satisfaction,
+            ...(withKey ? {id: this.id} : {}) 
         }
     }
 
@@ -77,6 +86,7 @@ export class WorkEntry {
         wo.start = o.start  // Idk how to handle this one so i'd rather let that crash
         wo.end = o.end ?? null
         wo.satisfaction = o.satisfaction ?? null
+        wo.id = o.id  // Again, if this fails, then we're on our way to duplication x_x
         return wo
     }
 
@@ -86,7 +96,7 @@ export class WorkEntry {
     }
 
     async setSatisfaction(satisfaction: number) {
-        satisfaction = Math.min(Math.max(satisfaction, 0), 5);
+        satisfaction = Math.min(Math.max(satisfaction, 0), 5)
         this.satisfaction = satisfaction;
         (await database).updateWorkEntry(this);
     }
@@ -125,9 +135,9 @@ async function updateParent(store: IDBObjectStore, childId: number, parent: Task
     await request(req)
 }
 
-async function initDatabase (): Promise<Database> {
+async function initDatabase(): Promise<Database> {
     return new Promise((resolve, reject) => {
-        let openRequest = indexedDB.open("TasksTrackerDB", 3)
+        let openRequest = indexedDB.open("TasksTrackerDB", 7)
 
         openRequest.onerror = (_event: Event) => {
             console.log("Usage of IndexedDB not allowed.")
@@ -142,25 +152,36 @@ async function initDatabase (): Promise<Database> {
                 const rq = (event.target as IDBOpenDBRequest)
                 console.error(`Database error: ${rq.error?.message}`)
             }
-
             resolve(databaseCore)
         }
 
         openRequest.onupgradeneeded = (event: IDBVersionChangeEvent) => {
             const db = (event.target as IDBOpenDBRequest).result;
+            const tx = (event.target as IDBOpenDBRequest).transaction!;
 
-            if (!db.objectStoreNames.contains("tasks")) {
-                const objectStore = db.createObjectStore("tasks", 
+            const tasks = db.objectStoreNames.contains("tasks")
+                ? tx.objectStore("tasks")
+                : db.createObjectStore("tasks", 
                     { keyPath: "id", autoIncrement: true }
                 )
-                objectStore.createIndex("parentId", "parentId")
+            if (!tasks.indexNames.contains("parentId")) {
+                tasks.createIndex("parentId", "parentId")
             }
-            if (!db.objectStoreNames.contains("workEntries")) {
-                const objectStore = db.createObjectStore("workEntries", 
+            
+            const workEntries = db.objectStoreNames.contains("workEntries")
+                ? tx.objectStore("workEntries")
+                : db.createObjectStore("workEntries", 
                     { keyPath: "id", autoIncrement: true }
                 )
-                objectStore.createIndex("relatedTaskId", "relatedTaskId")
+
+            if (!workEntries.indexNames.contains("relatedTaskId")) {
+                workEntries.createIndex("relatedTaskId", "relatedTaskId")
             }
+
+            if (!workEntries.indexNames.contains("end")) {
+                workEntries.createIndex("end", "end")
+            }
+    
         }
     })
 }
@@ -175,6 +196,7 @@ interface Database {
     addWorkEntry(task: Task | null): Promise<WorkEntry>
     updateWorkEntry(workEntry: WorkEntry): Promise<void>
     getWorkTimeSeconds(sinceXHours?: number | null, taskId?: number | null): Promise<number>
+    getWorkingEntry(): Promise<WorkEntry | null>
 }
 
 const databaseCore: Database = {
@@ -187,7 +209,7 @@ const databaseCore: Database = {
         const store = transaction.objectStore("tasks")
         let rq: IDBRequest<IDBValidKey>
         try {
-            rq = store.add(task.toObject())
+            rq = store.add(task.toObject(false))
             const key = await request<IDBValidKey>(rq)
             task.id = key as number
             if (parent != null) {
@@ -207,7 +229,7 @@ const databaseCore: Database = {
     async updateTask(task: Task): Promise<void> {
         const transaction = connection.transaction("tasks", "readwrite")
         const store = transaction.objectStore("tasks")
-        await request(store.put(task))
+        await request(store.put(task.toObject(true)))
     },
     async deleteTask(taskId: number): Promise<void> {
         const transaction = connection.transaction("tasks", "readwrite")
@@ -219,7 +241,7 @@ const databaseCore: Database = {
         const workEntry: WorkEntry = new WorkEntry(task?.id)
         const transaction = connection.transaction("workEntries", "readwrite")
         const store = transaction.objectStore("workEntries")
-        const req = store.add(workEntry.toObject())
+        const req = store.add(workEntry.toObject(false))
         const id = await request(req) as number
         workEntry.id = id
         return workEntry
@@ -228,7 +250,7 @@ const databaseCore: Database = {
     async updateWorkEntry(workEntry: WorkEntry): Promise<void> {
         const transaction = connection.transaction("workEntries", "readwrite")
         const store = transaction.objectStore("workEntries")
-        await request(store.put(workEntry))
+        await request(store.put(workEntry.toObject(true)))
     },
     async getWorkTimeSeconds(sinceXHours: number | null = null, taskId: number | null = null): Promise<number> {
         const transaction = connection.transaction("workEntries", "readonly")
@@ -246,6 +268,29 @@ const databaseCore: Database = {
             }
         }
         return totalMs / 1000
+    },
+    async getWorkingEntry(): Promise<WorkEntry | null> {
+        const transaction = connection.transaction("workEntries", "readonly")
+        const store = transaction.objectStore("workEntries")
+
+        const openedWorkEntry: WorkEntry[] = []
+
+        for await (const cursor of cursorIterator(store))  {
+            const entry: WorkEntry = WorkEntry.fromObject(cursor.value)
+            if (entry.end === null) {
+                openedWorkEntry.push(entry)
+            }
+        }
+        if (openedWorkEntry.length === 0) return null
+        if (openedWorkEntry.length === 1) return openedWorkEntry[0]
+
+        const last = openedWorkEntry.reduce((last, it) => last.start > it.start ? last : it)
+        for (const entry of openedWorkEntry) {
+            if (entry === last) continue;
+            entry.end = entry.start;
+            this.updateWorkEntry(entry); // fire-and-forget
+        }
+        return last
     }
 
 } 

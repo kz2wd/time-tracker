@@ -73,7 +73,7 @@ function AddCard({ showNewTask }: { showNewTask: (t: Task) => void }) {
   return (
     <>
       <div className="task-card task">
-        <input placeholder='new task' className="task-input"
+        <input placeholder='New task' className="task-input"
           value={draft}
           onKeyDown={(ev) => {
             if (ev.key === "Enter") {
@@ -146,21 +146,37 @@ function TimeDisplay({ timeFetch, text }: {
   timeFetch: () => Promise<number> , text: String
   }) {
   const [timeSeconds, setTimeSeconds] = useState(0)
+  const [localTime, setLocalTime] = useState(0)
+ 
+  const tskctx = useContext(SelectedTaskContext)!
+  useEffect(() => {
+    
+    const intervalId = setInterval(() => {
+      const now = Date.now()
+      setLocalTime((now - tskctx.workingEntry!.start) / 1000)  // Elapsed time
+    }, 1000)
+    
+
+    return () => clearInterval(intervalId)
+    
+  }, [tskctx.workingEntry])
 
   useEffect(() => {
+    setLocalTime(0)
     timeFetch().then(setTimeSeconds)
   }, [])
+
 
   return (
     <>
       <div className='time-display'>
         <div>
           
-          <span className="hours-display science-gothic-font" >{convertTime(timeSeconds).hours.toString().padStart(2, '0')}</span>
+          <span className="hours-display science-gothic-font" >{convertTime(timeSeconds + localTime).hours.toString().padStart(2, '0')}</span>
           <span className="h-label science-gothic-font">:</span>
-          <span className="minutes-display science-gothic-font">{convertTime(timeSeconds).minutes.toString().padStart(2, '0')}</span>
+          <span className="minutes-display science-gothic-font">{convertTime(timeSeconds + localTime).minutes.toString().padStart(2, '0')}</span>
           <span className="h-label science-gothic-font">:</span>
-          <span className="minutes-display science-gothic-font">{convertTime(timeSeconds).seconds.toString().padStart(2, '0')}</span>
+          <span className="minutes-display science-gothic-font">{convertTime(timeSeconds + localTime).seconds.toString().padStart(2, '0')}</span>
         </div>
         <p className="playwrite-no-font">{text}</p>
       </div>      
@@ -171,27 +187,29 @@ function TimeDisplay({ timeFetch, text }: {
 function BottomBar() {
 
   const tskctx = useContext(SelectedTaskContext)!  
-  const [currentWorkEntry, setCurrentWorkEntry] = useState<WorkEntry | null>(null)
   return (
     <>
       <div className="bottom-bar">
         <div className="selected-task-panel task">
-          {tskctx.selectedTask ? tskctx.selectedTask.description : "Select task"}
+          {tskctx.selectedTask ? tskctx.selectedTask.description : tskctx.workingEntry ? "Free work" : "Select task"}
         </div>
         <div className="control-panel">
           <TimeDisplay timeFetch={async () => await (await database).getWorkTimeSeconds(null, tskctx.selectedTask?.id)}
             text={"Total"} />
           <button onClick={async () => {
-            if (!tskctx.isWorking) {
+            if (tskctx.workingEntry != null) {
+              // Stop working
+              tskctx.workingEntry.finish()
+              tskctx.setWorkingEntry(null)
+            } else {
+              // Start working
               const workEntry = await (await database).addWorkEntry(tskctx.selectedTask)
-              setCurrentWorkEntry(workEntry)
-            } else if (currentWorkEntry != null) {
-              currentWorkEntry.finish()
+              tskctx.setWorkingEntry(workEntry)
             }
-            tskctx.setIsWorking(!tskctx.isWorking)
+            
             }
-          } className={tskctx.isWorking ? "stop": "start"}>
-            {tskctx.isWorking ? "Stop": "Start"}</button>
+          } className={tskctx.workingEntry != null ? "stop": "start"}>
+            {tskctx.workingEntry != null ? "Stop": "Start"}</button>
           <TimeDisplay timeFetch={async () => await (await database).getWorkTimeSeconds(24, tskctx.selectedTask?.id)}
           text={"Today"} />
         </div>
@@ -204,20 +222,28 @@ function BottomBar() {
 const SelectedTaskContext = createContext<{
   selectedTask: Task | null
   setSelectedTask: (t: Task | null) => void
-  isWorking: boolean
-  setIsWorking: (b: boolean) => void
+  workingEntry: WorkEntry | null
+  setWorkingEntry: (w: WorkEntry | null) => void
   editedTask: Task | null
   setEditedTask: (t: Task | null) => void
-} | null>(null); 
+}| null>(null); 
 
 function App() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [isWorking, setIsWorking] = useState(false)
+  const [workingEntry, setWorkingEntry] = useState<WorkEntry | null>(null)
   const [editedTask, setEditedTask] = useState<Task | null>(null)
   
+  useEffect(() => {
+    (async () => {
+      const entry = await (await database).getWorkingEntry()
+      setWorkingEntry(entry)
+      console.log(entry)
+    })()    
+  }, []) 
+
   const customSetSelectedTask = (task: Task | null) => {
     if (task == selectedTask) return
-    if (isWorking) return
+    if (workingEntry != null) return
     setSelectedTask(task)
   }
 
@@ -226,8 +252,8 @@ function App() {
       { 
         selectedTask: selectedTask, 
         setSelectedTask: customSetSelectedTask, 
-        isWorking: isWorking,
-        setIsWorking: setIsWorking,
+        workingEntry: workingEntry,
+        setWorkingEntry: setWorkingEntry,
         editedTask: editedTask,
         setEditedTask: setEditedTask,
       }}>

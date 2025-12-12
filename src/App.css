@@ -136,6 +136,8 @@ button {
   background-color: #303030;
   text-align: center;
   font-size: larger;
+  caret-color: transparent;
+  cursor: pointer;
 }
 
 .task-input:focus {
