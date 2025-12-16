@@ -260,7 +260,7 @@ const databaseCore: Database = {
 
         for await (const cursor of cursorIterator(store)) {
             const entry: WorkEntry = WorkEntry.fromObject(cursor.value)
-            if (taskId && entry.id != taskId) {
+            if (taskId && entry.relatedTaskId != taskId) {
                 continue
             }
             if (!cutoff || entry.start >= cutoff) {

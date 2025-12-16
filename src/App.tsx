@@ -142,18 +142,22 @@ function convertTime(seconds: number) {
 }
 
 
-function TimeDisplay({ timeFetch, text }: {
-  timeFetch: () => Promise<number> , text: String
+function TimeDisplay({ lastHours, taskId, text }: {
+  lastHours: number | null,
+  taskId: number | null,
+  text: string
   }) {
   const [timeSeconds, setTimeSeconds] = useState(0)
   const [localTime, setLocalTime] = useState(0)
  
   const tskctx = useContext(SelectedTaskContext)!
   useEffect(() => {
+    if (!tskctx.workingEntry) return
     
     const intervalId = setInterval(() => {
+      if (!tskctx.workingEntry) return
       const now = Date.now()
-      setLocalTime((now - tskctx.workingEntry!.start) / 1000)  // Elapsed time
+      setLocalTime((now - tskctx.workingEntry.start) / 1000)  // Elapsed time
     }, 1000)
     
 
@@ -162,21 +166,28 @@ function TimeDisplay({ timeFetch, text }: {
   }, [tskctx.workingEntry])
 
   useEffect(() => {
+    let cancelled = false
     setLocalTime(0)
-    timeFetch().then(setTimeSeconds)
-  }, [])
+    ;(async () => {
+      const seconds = await (await database).getWorkTimeSeconds(lastHours, taskId)
+      if (!cancelled) setTimeSeconds(seconds)
+    })() 
 
+  return () => { cancelled = true }
+  }, [lastHours, taskId])
+
+  const {hours, minutes, seconds} = convertTime(timeSeconds + localTime)
 
   return (
     <>
       <div className='time-display'>
         <div>
           
-          <span className="hours-display science-gothic-font" >{convertTime(timeSeconds + localTime).hours.toString().padStart(2, '0')}</span>
+          <span className="hours-display science-gothic-font" >{hours.toString().padStart(2, '0')}</span>
           <span className="h-label science-gothic-font">:</span>
-          <span className="minutes-display science-gothic-font">{convertTime(timeSeconds + localTime).minutes.toString().padStart(2, '0')}</span>
+          <span className="minutes-display science-gothic-font">{minutes.toString().padStart(2, '0')}</span>
           <span className="h-label science-gothic-font">:</span>
-          <span className="minutes-display science-gothic-font">{convertTime(timeSeconds + localTime).seconds.toString().padStart(2, '0')}</span>
+          <span className="minutes-display science-gothic-font">{seconds.toString().padStart(2, '0')}</span>
         </div>
         <p className="playwrite-no-font">{text}</p>
       </div>      
@@ -194,8 +205,10 @@ function BottomBar() {
           {tskctx.selectedTask ? tskctx.selectedTask.description : tskctx.workingEntry ? "Free work" : "Select task"}
         </div>
         <div className="control-panel">
-          <TimeDisplay timeFetch={async () => await (await database).getWorkTimeSeconds(null, tskctx.selectedTask?.id)}
-            text={"Total"} />
+          <TimeDisplay 
+            lastHours={null}
+            taskId={null} 
+            text={"All tasks"} />
           <button onClick={async () => {
             if (tskctx.workingEntry != null) {
               // Stop working
@@ -210,8 +223,10 @@ function BottomBar() {
             }
           } className={tskctx.workingEntry != null ? "stop": "start"}>
             {tskctx.workingEntry != null ? "Stop": "Start"}</button>
-          <TimeDisplay timeFetch={async () => await (await database).getWorkTimeSeconds(24, tskctx.selectedTask?.id)}
-          text={"Today"} />
+          <TimeDisplay
+            lastHours={null}
+            taskId={tskctx.selectedTask?.id ?? null}
+            text={"Current task"} />
         </div>
       </div>
     </>
