@@ -1,6 +1,7 @@
-import { useEffect, useState, createContext, useContext, useRef } from 'react'
+import { useEffect, useState, createContext, useContext } from 'react'
 import './App.css'
 import { database, Task, WorkEntry } from './database'
+import { GoogleLogin } from '@react-oauth/google';
 
 
 // Work Entry
@@ -174,7 +175,7 @@ function TimeDisplay({ lastHours, taskId, text }: {
     })() 
 
   return () => { cancelled = true }
-  }, [lastHours, taskId])
+  }, [lastHours, taskId, tskctx.workingEntry])
 
   const {hours, minutes, seconds} = convertTime(timeSeconds + localTime)
 
@@ -233,6 +234,28 @@ function BottomBar() {
   )
 }
 
+import { useGoogleDrivePicker } from "./googleDrivePicker"
+
+// Public restricted keys, 
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
+
+export function DriveFolderSelect() {
+  const { ready, signIn, openPicker } =
+    useGoogleDrivePicker(CLIENT_ID, API_KEY)
+
+  return (
+    <>
+      <button onClick={signIn} disabled={!ready}>
+        Sign in with Google
+      </button>
+
+      <button onClick={openPicker} disabled={!ready}>
+        Select Drive Folder
+      </button>
+    </>
+  )
+}
 
 const SelectedTaskContext = createContext<{
   selectedTask: Task | null
@@ -273,6 +296,7 @@ function App() {
         setEditedTask: setEditedTask,
       }}>
       <TaskContainer />
+      <DriveFolderSelect />
       <BottomBar />
     </SelectedTaskContext.Provider>
   )
