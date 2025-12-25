@@ -1,7 +1,6 @@
 import { useEffect, useState, createContext, useContext } from 'react'
 import './App.css'
 import { database, Task, WorkEntry } from './database'
-import { GoogleLogin } from '@react-oauth/google';
 
 
 // Work Entry
@@ -11,10 +10,14 @@ import { GoogleLogin } from '@react-oauth/google';
 // Task
 // Note (int / 5)
 
+// Why is this kind of things not default... 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
 function TaskCard({ task, hideOldTask }: { task: Task, hideOldTask: (t: Task) => void }) {
   const tskctx = useContext(SelectedTaskContext)!
-  const classes = `task-card task ${tskctx.selectedTask == task ? 'selected-task' : ''}`
+  const classes = `task-card task ${tskctx.selectedTask == task ? 'selected-task' : ''} ${tskctx.editedTask == task ? 'edited-task' : ''}`
   const [draft, setDraft] = useState(task.description.toString())
 
   function confirmEdit() {
@@ -146,7 +149,7 @@ function convertTime(seconds: number) {
 function TimeDisplay({ lastHours, taskId, text }: {
   lastHours: number | null,
   taskId: number | null,
-  text: string
+  text: string | null 
   }) {
   const [timeSeconds, setTimeSeconds] = useState(0)
   const [localTime, setLocalTime] = useState(0)
@@ -190,11 +193,124 @@ function TimeDisplay({ lastHours, taskId, text }: {
           <span className="h-label science-gothic-font">:</span>
           <span className="minutes-display science-gothic-font">{seconds.toString().padStart(2, '0')}</span>
         </div>
-        <p className="playwrite-no-font">{text}</p>
+        {text === null ? "" : <p className="playwrite-no-font">{text}</p>} 
       </div>      
     </>
   )
 }
+
+function Navbar() {
+  return (
+    <>
+      <nav>
+        <p>Tasks</p>
+        <p className='current'>Today</p>
+        <p>Calendar</p>
+        <p>Stats</p>
+        <p>Settings</p>
+      </nav>
+    </>
+  )
+}
+
+function TaskInfoPanel() {
+  return (
+    <>
+      <div className='task-info-panel'>
+        <div className='title'>Task Title</div>
+        <div className='timers inline-elements'>
+          <div className='paired'>
+            <TimeDisplay lastHours={null} taskId={null} text={"Total"} />
+            <TimeDisplay lastHours={null} taskId={null} text={"Expected"} />
+          </div>
+          <div className='paired'>
+            <TimeDisplay lastHours={24} taskId={null} text={"Today"} />
+            <TimeDisplay lastHours={null} taskId={null} text={"Daily quota"} />
+          </div>
+       </div>
+        <div className='button-settings inline-elements'>
+          <button>Subtasks</button>
+          <button>Color</button>
+        </div>
+        <div className='description'></div>
+      </div>
+    </>
+  )
+}
+
+function TaskArea(){
+  return (
+    <>
+      <div className='task-area'>
+        <div className='task-plateau'>
+          <LocationBar />
+          <TaskContainer />
+          <PresenceBar />
+        </div>
+        <TaskInfoPanel />
+
+      </div>
+    </>
+  )
+}
+
+
+function LocationBar() {
+  return (
+    <>
+      <div className='location-bar'>Home - Today</div>
+    </>
+  )
+}
+
+function PresenceBar() {
+  return (
+    <>
+      <div className='presence-bar'>
+        <PomodoroBox />
+        <button>Start</button>
+        <TimeDisplay lastHours={24} taskId={null} text={null} />
+      </div>
+    </>
+  )
+}
+
+function TimerCell({ defaultTime=0, step=1, min=0, max=95 } : 
+  {defaultTime?: number, step?: number, min?: number, max?: number}) {
+  const [time, setTime] = useState(defaultTime)
+
+  function onWheel(e: any) {
+    if (!window.matchMedia("(pointer: fine)").matches) return
+    e.preventDefault();
+    setTime(clamp(time - Math.sign(e.deltaY) * step, min, max));
+    
+  }
+  
+  return (
+    <>
+      <input type="number" className="time-input science-gothic-font" min={max} max={max} inputMode='numeric' pattern="[0-9]*" step={step} value={time}
+        onChange={(e) => setTime(Number(e.target.value))}
+        onWheel={onWheel}
+      />
+    </>
+  )
+
+
+}
+
+function PomodoroBox() {
+  return (
+    <>
+      <div className='pomodoro-box'>
+        <button>Pomodoro ON</button>
+        <TimerCell defaultTime={25} step={5}/>
+        <TimerCell defaultTime={5} step={5}/>
+      </div>
+    </>
+  )
+}
+
+
 
 function BottomBar() {
 
@@ -234,29 +350,6 @@ function BottomBar() {
   )
 }
 
-import { useGoogleDrivePicker } from "./googleDrivePicker"
-
-// Public restricted keys, 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
-
-export function DriveFolderSelect() {
-  const { ready, signIn, openPicker } =
-    useGoogleDrivePicker(CLIENT_ID, API_KEY)
-
-  return (
-    <>
-      <button onClick={signIn} disabled={!ready}>
-        Sign in with Google
-      </button>
-
-      <button onClick={openPicker} disabled={!ready}>
-        Select Drive Folder
-      </button>
-    </>
-  )
-}
-
 const SelectedTaskContext = createContext<{
   selectedTask: Task | null
   setSelectedTask: (t: Task | null) => void
@@ -267,6 +360,7 @@ const SelectedTaskContext = createContext<{
 }| null>(null); 
 
 function App() {
+
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [workingEntry, setWorkingEntry] = useState<WorkEntry | null>(null)
   const [editedTask, setEditedTask] = useState<Task | null>(null)
@@ -295,9 +389,8 @@ function App() {
         editedTask: editedTask,
         setEditedTask: setEditedTask,
       }}>
-      <TaskContainer />
-      <DriveFolderSelect />
-      <BottomBar />
+      <Navbar/>
+      <TaskArea/>
     </SelectedTaskContext.Provider>
   )
 }
