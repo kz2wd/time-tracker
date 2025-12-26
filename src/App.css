@@ -1,3 +1,28 @@
+:root {
+  font-size: 16px;
+
+  --radius-default: clamp(0.5rem, 0.8em, 1rem);
+
+  --space-tight: 0.1rem;
+  --space-close: 0.5rem;
+  --space-mid: 1rem;
+  --space-away: 2rem;
+
+  --pad-w-1: clamp(1rem, 2vw, 3rem);
+
+  --color-text: #dbdada;
+  --color-main: #1a1a1a;
+  --color-sub-1: #131313;
+  --color-sub-2: #303030;
+  --color-sub-3: #3b3b3b;
+  --color-sub-4: #111111;
+  --color-backtext: #474646;
+  --color-shadow: #111111;
+  --transition-time-short: 0.5s;
+
+}
+
+
 #root {
   margin: auto;
   text-align: center;
@@ -6,92 +31,9 @@
   display: grid;
   grid-template-rows: 64px;
   grid-gap: 0;
+  color: var(--color-text);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.task-container {
-  justify-content: center;
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  background-color: #333333;
-  height: 50vh;
-  overflow: scroll;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-.task-card {
-  background: #303030;
-  border-radius: 20px;
-  margin: 10px;
-  box-shadow: 0px 0px 7px #0f0f0f;
-  width: 90%;
-  max-width: 600px;
-  font-size: larger;
-  cursor: pointer;
-}
-
-.selected-task {
-  background: #3e3e3e;
-}
-
-.bottom-bar {
-  background: #3e3e3e;
-  width: 100%;
-  overflow: hidden;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  
-  margin: 0;
-  box-shadow: 0px -2px 10px #131313;
-}
-
-.bottom-bar .selected-task-panel {
-  margin: 10px;
-  font-size: larger;
-}
-
-.control-panel {
-  background: #333333;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-around;
-  box-shadow: 0px 0px 7px #232323;
-  margin: 10px;
-  padding: 5px;
-}
 
 
 button.start { background: rgb(63, 103, 63); }
@@ -110,13 +52,6 @@ button.stop  { background: rgb(113, 60, 60); }
     "CTRS" 0;
 }
 
-.task {
-  font-family: "Oswald", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 450;
-  font-style: normal;
-}
-
 .playwrite-no-font {
   font-family: "Playwrite NO", cursive;
   font-optical-sizing: auto;
@@ -131,32 +66,6 @@ button {
 }
 
 
-.selected-task .task-input {
-  background-color: #3e3e3e;
-}
-
-.edited-task .task-input {
-  cursor: text;
-}
-
-.task-input {
-  width: 90%;
-  height: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  border: none;
-  padding: 3px;
-  background-color: #303030;
-  text-align: center;
-  font-size: larger;
-  caret-color: transparent;
-  cursor: pointer;
-}
-
-.task-input:focus {
-  border: none;
-  outline: none;
-}
 
 .hidden {
   visibility: hidden;
@@ -183,38 +92,14 @@ nav p {
   padding: 1em 3em;
   background-color: #222222;
 }
-.task-area {
-  display: flex;
-  flex-direction: row;
-  overflow: auto;
-  padding: 0;
-  margin: 0;
-}
+
 
 .task-plateau {
   width: 60%;
   height: 100%;
 }
 
-.location-bar {
-  padding: 5px;
-  text-align: left;
-  background-color: #222222;
-  font-size: small;
-  color: #818181;
-}
 
-.task-info-panel {
-  background-color: #303030;
-  width: 40%;
-}
-
-.task-info-panel .title {
-  font-size: 3em;
-  background-color: #474646;
-  border-radius: 10px;
-  margin: 10px;
-}
 .inline-elements {
   display: flex;
   flex-direction: row;
@@ -227,12 +112,28 @@ nav p {
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
 
   background-color: #232323;
 }
 
 .pomodoro-box {
   background-color: #3e3e3e;
+  border-radius: 5px;
+  margin: 5px;
+  
+}
+.pomodoro-box button {
+  background-color: #3e3e3e;
+  transition: all var(--transition-time-short);
+}
+.pomodoro-box button:hover {
+  border-color: #3e3e3e;
+  background-color: rgb(53, 53, 53)
+}
+
+.pomodoro-box:hover {
+  border: 1px blue;
 }
 
 .time-input {
@@ -241,6 +142,7 @@ nav p {
   padding: 0.2em;
   text-align: center;
   font-size: 1rem;
+  margin: 2px;
 
   border: none;
   outline: none;
@@ -257,4 +159,13 @@ nav p {
 
 .time-input:focus {
   background-color: #202020;
+}
+
+.duration-set {
+
+}
+
+
+.time-display {
+
 }

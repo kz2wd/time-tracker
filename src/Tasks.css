@@ -1,0 +1,113 @@
+
+.task-container {
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-main);
+  height: 50vh;
+  overflow: scroll;
+}
+
+
+.task-card {
+  background: var(--color-sub-2);
+  border-radius: var(--radius-default);
+  margin: var(--space-close);
+  box-shadow: 0px 0px 7px var(--color-shadow);
+  width: 50%;
+  max-width: 600px;
+  font-size: larger;
+  cursor: pointer;
+  transition: all var(--transition-time-short);
+
+}
+
+.task-card:hover {
+  background-color: var(--color-sub-3);
+}
+
+
+.selected-task {
+  background: #3e3e3e;
+}
+
+
+.task {
+  font-family: "Oswald", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 450;
+  font-style: normal;
+}
+
+
+.edited-task .task-input {
+  cursor: text;
+}
+
+.task-input {
+  width: 90%;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: none;
+  padding: 3px;
+  background-color: transparent;
+  text-align: center;
+  font-size: larger;
+  caret-color: transparent;
+  cursor: pointer;
+}
+
+.task-input:focus {
+  border: none;
+  outline: none;
+}
+
+.task-area {
+  display: flex;
+  flex-direction: row;
+  overflow: auto;
+  padding: 0;
+  margin: 0;
+}
+
+
+.location-bar {
+  padding: 5px;
+  text-align: left;
+  background-color: #222222;
+  font-size: small;
+  color: #818181;
+}
+
+.task-info-panel {
+  background-color: #303030;
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-info-panel .title {
+  font-size: 3em;
+  background-color: var(--color-backtext);
+  border-radius: 10px;
+  margin: 10px;
+}
+
+.task-info-panel .description {
+  text-align: left;
+  background-color: var(--color-backtext);
+  flex: 1;
+  overflow: scroll;
+  
+}
+
+.presence-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+
+  background-color: #232323;
+}
