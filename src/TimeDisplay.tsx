@@ -3,6 +3,8 @@ import { database } from './database'
 
 import { appContext } from './appContext'
 
+import './TimeDisplay.css'
+
 function convertTime(seconds: number) {
   return {
     hours: Math.floor(seconds / 3600),

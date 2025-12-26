@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from 'react'
 import { database, Task } from './database'
 import { TimeDisplay, DurationSet, PomodoroBox } from './TimeDisplay'
 
-import './App.css'
+import './Tasks.css'
 
 import { appContext } from './appContext'
 
@@ -152,8 +152,8 @@ export function TaskInfoPanel() {
           <button>Subtasks</button>
           <button>Color</button>
         </div>
-        <input className='description'>
-        </input>
+        <textarea className='description' placeholder='Description'>
+        </textarea>
       </div>
     </>
   )
@@ -163,7 +163,7 @@ export function TaskArea(){
   return (
     <>
       <div className='task-area'>
-        <div className='task-plateau'>
+        <div className='task-plateau column-container'>
           <LocationBar />
           <TaskContainer />
           <PresenceBar />
