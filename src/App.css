@@ -109,9 +109,8 @@ nav p {
 
 .paired {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: space-around;
-  width: 100%;
 }
 
 .column-container {

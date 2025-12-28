@@ -1,14 +1,15 @@
 
 export class Task {
     id?: number
-    description: String
-    notes: String = ""
+    title: string
+    description: String = ""
+    notes: string = ""
     parentId: number | null
     subtaskIds: number[] = []
     isOver: boolean = false
 
-    constructor(description: String, parentId: number | null = null) {
-        this.description = description
+    constructor(title: string, parentId: number | null = null) {
+        this.title = title
         this.parentId = parentId
     }
 
@@ -32,19 +33,24 @@ export class Task {
         return t
     }
 
-    async setDescription(newDescription: String) {
-        this.description = newDescription;
-        (await database).updateTask(this);
+    async seDescription(newDescription: string) {
+        this.description = newDescription
+        ;(await database).updateTask(this)
     }
 
-    async setNotes(newNotes: String) {
-        this.notes = newNotes;
-        (await database).updateTask(this);
+    async setTitle(newTitle: string) {
+        this.title = newTitle
+        ;(await database).updateTask(this)
+    }
+
+    async setNotes(newNotes: string) {
+        this.notes = newNotes
+        ;(await database).updateTask(this)
     }
 
     async setIsOver(newIsOver: boolean) {
-        this.isOver = newIsOver;
-        (await database).updateTask(this);
+        this.isOver = newIsOver
+        ;(await database).updateTask(this)
     }
 
     async getTotalTimeMinutes(): Promise<number> {

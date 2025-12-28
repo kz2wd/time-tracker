@@ -102,7 +102,11 @@
   flex: 1;
   overflow: scroll;
   min-height: 6rem;
-  
+  border: none;
+}
+
+.task-info-panel .description:focus {
+  outline: none;
 }
 
 .presence-bar {
